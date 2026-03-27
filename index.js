@@ -1,17 +1,15 @@
 const canvas = document.getElementById('detection-canvas');
 const ctx = canvas.getContext('2d');
-const fieldList = document.getElementById('field-list');
+const mapContainer = document.getElementById('map-container');
 
-// Metrics elements
-const statLatency = document.getElementById('stat-latency');
-const statConf = document.getElementById('stat-conf');
-const statFrame = document.getElementById('stat-frame');
-
+// State
 let currentFrame = 1;
 
+// Resize canvas to match map container
 function resize() {
-    canvas.width = window.innerWidth;
-    canvas.height = window.innerHeight;
+    const parent = document.getElementById('map-parent');
+    canvas.width = parent.clientWidth;
+    canvas.height = parent.clientHeight;
 }
 
 window.addEventListener('resize', resize);
@@ -19,9 +17,10 @@ resize();
 
 // Mock mapping from GeoJSON coords to screen coords
 function mapCoords(coords) {
+    // These offsets align with the 'vibrant_green_agri_map.png' features
     const centerX = 12.45;
-    const centerY = 45.15; // Adjusted to align with the new tile features
-    const scale = 1200; // Lower scale means smaller polygons, fitting the fields better
+    const centerY = 45.20; 
+    const scale = 3000; 
     
     return coords.map(p => ({
         x: canvas.width / 2 + (p[0] - centerX) * scale,
@@ -29,78 +28,78 @@ function mapCoords(coords) {
     }));
 }
 
-async function fetchDetection(frame) {
-    try {
-        const response = await fetch(`detections_frame_${frame}.json`);
-        if (!response.ok) return null;
-        return await response.json();
-    } catch (e) {
-        return null;
-    }
-}
-
-function updateUI(data, frameNum) {
-    if (!data) return;
-    
-    statFrame.innerText = frameNum;
-    statLatency.innerText = (45 + Math.random() * 5).toFixed(1) + ' ms';
-    
-    // Calculate average confidence
-    const avgConf = data.features.reduce((acc, f) => acc + f.properties.confidence, 0) / data.features.length;
-    statConf.innerText = (avgConf * 100).toFixed(0) + '%';
-    
-    // Update List
-    fieldList.innerHTML = '';
-    data.features.forEach(f => {
-        const div = document.createElement('div');
-        div.className = 'detection-card';
-        div.innerHTML = `
-            <div class="field-id">${f.properties.id.toUpperCase()}</div>
-            <div class="field-meta">Area: ${f.properties.area} ha | Conf: ${(f.properties.confidence * 100).toFixed(1)}%</div>
-        `;
-        fieldList.appendChild(div);
-    });
-}
-
 function drawDetections(data) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    if (!data) return;
-    
-    data.features.forEach(feature => {
-        const points = mapCoords(feature.geometry.coordinates[0]);
-        
+    data.forEach((field, index) => {
+        const points = mapCoords(field.coords);
+        if (points.length < 3) return;
+
+        // Draw Glow Path
         ctx.beginPath();
         ctx.moveTo(points[0].x, points[0].y);
         for (let i = 1; i < points.length; i++) {
             ctx.lineTo(points[i].x, points[i].y);
         }
         ctx.closePath();
-        
-        // Glow effect
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#39ff14';
-        ctx.strokeStyle = '#39ff14';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-        
-        // Fill
-        ctx.fillStyle = 'rgba(57, 255, 20, 0.1)';
+
+        // Polygon style
+        ctx.fillStyle = 'rgba(57, 255, 20, 0.15)';
         ctx.fill();
         
-        // ID label
+        ctx.strokeStyle = '#39ff14';
+        ctx.lineWidth = 3;
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#39ff14';
+        ctx.setLineDash([8, 4]); // Dashed line like the user's SVG
+        ctx.stroke();
+        ctx.setLineDash([]);
         ctx.shadowBlur = 0;
+
+        // Label
+        ctx.font = 'bold 10px Inter';
         ctx.fillStyle = '#39ff14';
-        ctx.font = 'bold 12px Inter';
-        ctx.fillText(feature.properties.id.toUpperCase(), points[0].x, points[0].y - 10);
+        ctx.fillText(field.id.toUpperCase(), points[0].x, points[0].y - 10);
     });
+}
+
+function updateUI(data, frame) {
+    const list = document.getElementById('detections-list');
+    list.innerHTML = '';
+    
+    data.forEach(field => {
+        const item = document.createElement('div');
+        item.className = `flex items-center gap-4 px-6 py-4 text-[#baccb0] hover:text-[#e2e3e0] hover:bg-[#333534]/50 border-r-2 border-transparent transition-all cursor-pointer`;
+        item.innerHTML = `
+            <span class="material-symbols-outlined text-sm">radar</span>
+            <div class="flex flex-col">
+                <span class="font-['Inter'] uppercase tracking-widest text-[10px] text-white font-black">${field.id}</span>
+                <span class="text-[9px] text-[#baccb0]">${field.area_ha} ha | Conf: ${(field.confidence * 100).toFixed(1)}%</span>
+            </div>
+        `;
+        list.appendChild(item);
+    });
+
+    document.getElementById('cpu-stat').textContent = `${Math.floor(20 + Math.random() * 15)}%`;
+    document.getElementById('latency-stat').textContent = `${Math.floor(40 + Math.random() * 10)}ms`;
+}
+
+async function fetchDetection(frame) {
+    try {
+        const response = await fetch(`detections_frame_${frame}.json`);
+        return await response.json();
+    } catch (e) {
+        console.error("Error fetching frame:", e);
+        return null;
+    }
 }
 
 async function loop() {
     const data = await fetchDetection(currentFrame);
     if (data) {
         updateUI(data, currentFrame);
-        // Add a small fade effect between frames
+        
+        // Soft fade
         canvas.style.opacity = 0.5;
         setTimeout(() => {
             drawDetections(data);
@@ -109,9 +108,8 @@ async function loop() {
     }
     
     currentFrame = (currentFrame % 5) + 1;
-    setTimeout(loop, 1200); // Faster polling for better "real-time" feel
+    setTimeout(loop, 1500);
 }
 
-// Initial draw a background grid removed to prevent CSS override
-// loop() handles the detection cycle
 loop();
+resize();

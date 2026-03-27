@@ -1,75 +1,231 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EdgeAgri | Real-Time Boundary Detection</title>
-    <link rel="stylesheet" href="index.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Sentinel Stream | Field Analysis</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400&amp;display=block" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              colors: {
+                "on-secondary": "#003739",
+                "surface-variant": "#333534",
+                "inverse-on-surface": "#2f312f",
+                "error": "#ffb4ab",
+                "tertiary": "#f1ffd9",
+                "tertiary-fixed": "#9ffb00",
+                "surface-dim": "#121413",
+                "on-surface-variant": "#baccb0",
+                "secondary-container": "#00f4fe",
+                "primary": "#efffe3",
+                "surface-container": "#1e201f",
+                "inverse-surface": "#e2e3e0",
+                "surface": "#121413",
+                "on-primary": "#053900",
+                "inverse-primary": "#106e00",
+                "on-tertiary": "#1f3700",
+                "on-secondary-fixed-variant": "#004f53",
+                "on-primary-fixed": "#022100",
+                "secondary-fixed-dim": "#00dce5",
+                "outline": "#85967c",
+                "on-secondary-fixed": "#002021",
+                "surface-tint": "#2ae500",
+                "tertiary-container": "#9cf500",
+                "surface-container-highest": "#333534",
+                "on-primary-fixed-variant": "#095300",
+                "on-background": "#e2e3e0",
+                "on-tertiary-container": "#426c00",
+                "surface-container-high": "#282a29",
+                "tertiary-fixed-dim": "#8bdc00",
+                "on-error-container": "#ffdad6",
+                "secondary-fixed": "#63f7ff",
+                "on-tertiary-fixed-variant": "#2f4f00",
+                "surface-bright": "#383a38",
+                "on-error": "#690005",
+                "background": "#121413",
+                "surface-container-lowest": "#0d0f0e",
+                "surface-container-low": "#1a1c1b",
+                "primary-container": "#39ff14",
+                "on-tertiary-fixed": "#102000",
+                "outline-variant": "#3c4b35",
+                "on-secondary-container": "#006c71",
+                "on-primary-container": "#107100",
+                "secondary": "#e6feff",
+                "primary-fixed-dim": "#2ae500",
+                "error-container": "#93000a",
+                "primary-fixed": "#79ff5b",
+                "on-surface": "#e2e3e0"
+              },
+              fontFamily: {
+                "headline": ["Inter"],
+                "body": ["Inter"],
+                "label": ["Inter"]
+              },
+              borderRadius: {"DEFAULT": "0.125rem", "lg": "0.25rem", "xl": "0.5rem", "full": "0.75rem"},
+            },
+          },
+        }
+    </script>
+    <style>
+        .material-symbols-outlined {
+          font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+          vertical-align: middle;
+        }
+        .glass-panel {
+          background: rgba(51, 53, 52, 0.4);
+          backdrop-filter: blur(32px);
+          -webkit-backdrop-filter: blur(32px);
+        }
+        .neon-glow-primary {
+          box-shadow: 0 0 20px rgba(57, 255, 20, 0.6);
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: opacity 0.5s ease;
+        }
+    </style>
 </head>
-<body>
-    <div id="dashboard">
-        <div id="map-container"></div>
-        <canvas id="detection-canvas"></canvas>
+<body class="bg-surface text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container overflow-x-hidden">
+    <!-- TopAppBar -->
+    <header class="fixed top-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-[#121413]/40 backdrop-blur-xl shadow-[0_4px_40px_0_rgba(42,229,0,0.08)]">
+        <div class="flex items-center gap-4">
+            <span class="text-xl font-black tracking-tighter text-[#39ff14]">Sentinel Stream</span>
+            <nav class="hidden md:flex gap-6 ml-8 items-center">
+                <a class="text-[#39ff14] font-bold text-sm uppercase tracking-wider transition-colors hover:text-[#39ff14]/80" href="#">Overview</a>
+                <a class="text-[#baccb0] font-bold text-sm uppercase tracking-wider hover:bg-[#333534] transition-colors px-2 py-1 rounded" href="#">Fleet</a>
+                <a class="text-[#baccb0] font-bold text-sm uppercase tracking-wider hover:bg-[#333534] transition-colors px-2 py-1 rounded" href="#">Logs</a>
+            </nav>
+        </div>
+        <div class="flex items-center gap-4">
+            <div class="hidden md:flex items-center gap-2 px-3 py-1 bg-surface-container-lowest rounded border border-outline-variant/10">
+                <span class="w-2 h-2 rounded-full bg-primary-container animate-pulse"></span>
+                <span class="text-[10px] font-label uppercase tracking-[0.1em] text-on-surface-variant">Edge Active</span>
+            </div>
+            <button class="material-symbols-outlined text-on-surface-variant hover:bg-[#333534] p-2 rounded transition-colors">sensors</button>
+            <button class="material-symbols-outlined text-on-surface-variant hover:bg-[#333534] p-2 rounded transition-colors">settings</button>
+            <button class="bg-primary-container text-on-primary-container px-4 py-1.5 rounded-md text-xs font-bold uppercase tracking-widest active:scale-95 duration-200">Edge Config</button>
+        </div>
+    </header>
+
+    <!-- SideNavBar (Analysis HUD) -->
+    <aside class="fixed right-0 top-0 h-full z-40 flex flex-col pt-20 bg-[#333534]/40 backdrop-blur-[32px] w-80 shadow-[-10px_0_30px_rgba(0,0,0,0.5)] border-l border-outline-variant/5">
+        <div class="px-6 py-4 space-y-1">
+            <h2 class="text-[#39ff14] font-bold text-lg leading-tight" id="field-name">Active Survey</h2>
+            <p class="font-['Inter'] uppercase tracking-[0.05em] text-[10px] text-[#00f4fe]" id="frame-status">Active Stream: 60 FPS</p>
+        </div>
+        <div class="mt-4 px-6">
+             <div class="text-[10px] font-bold uppercase text-on-surface-variant mb-2">TELEMETRY</div>
+             <div class="grid grid-cols-2 gap-2">
+                 <div class="bg-surface-container p-3 rounded border border-outline-variant/10">
+                     <div class="text-[9px] text-on-surface-variant uppercase">CPU</div>
+                     <div class="text-sm font-black text-white" id="cpu-stat">32%</div>
+                 </div>
+                 <div class="bg-surface-container p-3 rounded border border-outline-variant/10">
+                     <div class="text-[9px] text-on-surface-variant uppercase">Latency</div>
+                     <div class="text-sm font-black text-white" id="latency-stat">46ms</div>
+                 </div>
+             </div>
+        </div>
         
-        <!-- HUD Overlay -->
-        <div class="hud top-bar">
-            <div class="title-card">
-                <div class="pulse-dot"></div>
-                <div>
-                    <h1 style="font-size: 14px; letter-spacing: 2px; text-transform: uppercase;">Sentinel Stream</h1>
-                    <div style="font-size: 10px; color: var(--on-surface-variant);">Live Detection Active</div>
-                </div>
+        <div class="mt-8 flex flex-col overflow-y-auto max-h-[400px]" id="detections-list">
+            <!-- Dynamic Detections Here -->
+        </div>
+
+        <div class="mt-auto px-6 py-8 space-y-4">
+            <button class="w-full bg-primary-container text-on-primary-container py-3 rounded text-xs font-black uppercase tracking-widest shadow-[0_0_20px_rgba(57,255,20,0.3)] active:scale-95 transition-transform">Re-scan Field</button>
+            <div class="pt-6 border-t border-outline-variant/20 flex flex-col gap-2">
+                <a class="flex items-center gap-3 text-[#baccb0] hover:text-white transition-colors" href="#">
+                    <span class="material-symbols-outlined text-sm">terminal</span>
+                    <span class="font-['Inter'] uppercase tracking-[0.05em] text-[10px]">Diagnostics</span>
+                </a>
             </div>
-            
-            <div class="title-card" style="gap: 24px;">
-                <div style="text-align: right;">
-                    <div class="label">Hardware</div>
-                    <div class="value" style="font-size: 14px; color: white;">NVIDIA Jetson AGX</div>
-                </div>
-                <div style="text-align: right;">
-                    <div class="label">System</div>
-                    <div class="value" style="font-size: 14px; color: var(--secondary);">Optimal</div>
+        </div>
+    </aside>
+
+    <!-- Main Content Canvas -->
+    <main class="mr-80 pt-16 min-h-screen relative flex flex-col">
+        <div class="px-12 py-6 flex justify-between items-center z-10">
+            <a class="group flex items-center gap-2 text-on-surface-variant hover:text-primary transition-colors" href="#">
+                <span class="material-symbols-outlined text-lg">arrow_back</span>
+                <span class="text-xs font-bold uppercase tracking-widest">Back to Monitor</span>
+            </a>
+            <div class="flex gap-4">
+                <div class="px-3 py-1 bg-surface-container-high/60 backdrop-blur rounded flex items-center gap-2 border border-outline-variant/10">
+                    <span class="material-symbols-outlined text-secondary-fixed text-sm">satellite_alt</span>
+                    <span class="text-[10px] font-label uppercase tracking-widest text-on-surface">Sentinel-2B Source</span>
                 </div>
             </div>
         </div>
 
-        <div class="sidebar">
-            <h2 style="font-size: 18px; margin-bottom: 8px;">Delineate Engine</h2>
-            
-            <div class="status-grid">
-                <div class="status-item">
-                    <div class="label">Inference</div>
-                    <div class="value" id="stat-latency">-- ms</div>
-                </div>
-                <div class="status-item">
-                    <div class="label">Confidence</div>
-                    <div class="value" id="stat-conf">--%</div>
-                </div>
-            </div>
-            
-            <div style="margin-top: 12px;">
-                <h3 class="label">Active Detections</h3>
-                <div class="detections-list" id="field-list">
-                    <!-- Cards will be injected here -->
-                    <div style="color: var(--on-surface-variant); font-size: 12px;">Waiting for detection frames...</div>
+        <section class="flex-grow relative px-12 mb-12">
+            <div class="w-full h-[540px] rounded-xl overflow-hidden relative border border-outline-variant/10 shadow-2xl" id="map-parent">
+                <!-- Our 'Vibrant Green' Image serves as the background -->
+                <div class="absolute inset-0 bg-cover bg-center filter saturate-[1.4] brightness-[0.8] contrast-[1.1]" id="map-container" style="background-image: url('satellite_tile.png')"></div>
+                <canvas id="detection-canvas"></canvas>
+                
+                <!-- HUD Overlays on Map -->
+                <div class="absolute top-6 left-6 flex flex-col gap-2 z-20">
+                    <div class="glass-panel px-4 py-2 rounded-lg border-l-4 border-secondary-container">
+                        <p class="text-[10px] font-label uppercase tracking-tighter text-secondary-container">Perimeter Accuracy</p>
+                        <p class="text-2xl font-black text-white" id="accuracy-stat">99.8%</p>
+                    </div>
                 </div>
             </div>
-            
-            <div style="margin-top: auto;">
-                <div class="label">Edge Node</div>
-                <div style="font-size: 12px; font-family: monospace;">AGRI-EDGE-01.LOCAL</div>
-            </div>
-        </div>
+        </section>
 
-        <div class="bottom-bar">
-            <div>FRAME: <span class="metric-live" id="stat-frame">0</span></div>
-            <div>FPS: <span class="metric-live">24.2</span></div>
-            <div>CPU: <span class="metric-live">32%</span></div>
-            <div>GPU: <span class="metric-live">68%</span></div>
-            <div style="margin-left: auto;">SENTINEL-2 L2A | EARTH ENGINE SYNC</div>
-        </div>
-    </div>
+        <!-- Analysis Cards Grid -->
+        <section class="px-12 pb-24 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div class="glass-panel p-6 rounded-xl border border-outline-variant/20 flex flex-col gap-4 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-secondary-container"></div>
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-on-surface">Boundary Health</h3>
+                <div class="h-24 flex items-end gap-1">
+                    <div class="flex-grow flex items-end gap-[2px] h-full">
+                        <div class="w-2 bg-secondary-container/20 h-1/2 rounded-t-sm"></div>
+                        <div class="w-2 bg-secondary-container/80 h-4/5 rounded-t-sm"></div>
+                        <div class="w-2 bg-secondary-container h-full rounded-t-sm shadow-[0_0_10px_rgba(0,244,254,0.4)]"></div>
+                        <div class="w-2 bg-secondary-container/40 h-1/2 rounded-t-sm"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="glass-panel p-6 rounded-xl border border-outline-variant/20 flex flex-col gap-6 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-primary-container"></div>
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-on-surface">Soil Core Data</h3>
+                <div class="space-y-4">
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-[10px] uppercase tracking-widest font-bold">
+                            <span class="text-on-surface-variant">Moisture</span>
+                            <span class="text-primary-container">72%</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-surface-container-lowest rounded-full overflow-hidden">
+                            <div class="h-full bg-primary-container shadow-[0_0_10px_rgba(57,255,20,0.4)]" style="width: 72%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-xl border border-outline-variant/20 flex flex-col gap-4 relative overflow-hidden">
+                <div class="absolute top-0 left-0 w-1 h-full bg-outline-variant"></div>
+                <h3 class="text-xs font-black uppercase tracking-[0.2em] text-on-surface">Detection Insights</h3>
+                <div class="bg-surface-container-lowest/50 p-3 rounded border border-outline-variant/5">
+                    <p class="text-[11px] leading-relaxed text-on-surface-variant italic" id="ai-insight">
+                        "AI Analysis: Edge stability stable. localized biomass increase in NE quadrant."
+                    </p>
+                </div>
+            </div>
+        </section>
+    </main>
 
     <script src="index.js"></script>
 </body>
