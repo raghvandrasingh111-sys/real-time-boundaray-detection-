@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EdgeAgri | Real-Time Boundary Detection</title>
+    <link rel="stylesheet" href="index.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="dashboard">
+        <div id="map-container"></div>
+        <canvas id="detection-canvas"></canvas>
+        
+        <!-- HUD Overlay -->
+        <div class="hud top-bar">
+            <div class="title-card">
+                <div class="pulse-dot"></div>
+                <div>
+                    <h1 style="font-size: 14px; letter-spacing: 2px; text-transform: uppercase;">Sentinel Stream</h1>
+                    <div style="font-size: 10px; color: var(--on-surface-variant);">Live Detection Active</div>
+                </div>
+            </div>
+            
+            <div class="title-card" style="gap: 24px;">
+                <div style="text-align: right;">
+                    <div class="label">Hardware</div>
+                    <div class="value" style="font-size: 14px; color: white;">NVIDIA Jetson AGX</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="label">System</div>
+                    <div class="value" style="font-size: 14px; color: var(--secondary);">Optimal</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <h2 style="font-size: 18px; margin-bottom: 8px;">Delineate Engine</h2>
+            
+            <div class="status-grid">
+                <div class="status-item">
+                    <div class="label">Inference</div>
+                    <div class="value" id="stat-latency">-- ms</div>
+                </div>
+                <div class="status-item">
+                    <div class="label">Confidence</div>
+                    <div class="value" id="stat-conf">--%</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: 12px;">
+                <h3 class="label">Active Detections</h3>
+                <div class="detections-list" id="field-list">
+                    <!-- Cards will be injected here -->
+                    <div style="color: var(--on-surface-variant); font-size: 12px;">Waiting for detection frames...</div>
+                </div>
+            </div>
+            
+            <div style="margin-top: auto;">
+                <div class="label">Edge Node</div>
+                <div style="font-size: 12px; font-family: monospace;">AGRI-EDGE-01.LOCAL</div>
+            </div>
+        </div>
+
+        <div class="bottom-bar">
+            <div>FRAME: <span class="metric-live" id="stat-frame">0</span></div>
+            <div>FPS: <span class="metric-live">24.2</span></div>
+            <div>CPU: <span class="metric-live">32%</span></div>
+            <div>GPU: <span class="metric-live">68%</span></div>
+            <div style="margin-left: auto;">SENTINEL-2 L2A | EARTH ENGINE SYNC</div>
+        </div>
+    </div>
+
+    <script src="index.js"></script>
+</body>
+</html>

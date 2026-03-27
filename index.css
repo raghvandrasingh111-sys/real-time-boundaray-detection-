@@ -1,0 +1,196 @@
+:root {
+    /* Design System: Chlorophyll Sentinel */
+    --primary: #39ff14; /* Neon Green */
+    --secondary: #00f4fe; /* Cyan */
+    --background: #121413;
+    --surface: #1a1c1b;
+    --surface-high: #282a29;
+    --on-surface: #e2e3e0;
+    --on-surface-variant: #baccb0;
+    --outline: #3c4b35;
+    
+    --glass-background: rgba(40, 42, 41, 0.4);
+    --glass-blur: 24px;
+    --glass-border: rgba(57, 255, 20, 0.15);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background: var(--background);
+    color: var(--on-surface);
+    height: 100vh;
+    width: 100vw;
+    overflow: hidden;
+    display: flex;
+}
+
+#dashboard {
+    position: relative;
+    flex: 1;
+    display: flex;
+}
+
+/* Background Map Simulation */
+#map-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url('satellite_tile.png?v=2') center center no-repeat;
+    background-size: cover;
+    z-index: 1;
+    filter: saturate(1.4) brightness(0.8) contrast(1.1);
+}
+
+#map-container::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, transparent 40%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none;
+    z-index: 2;
+}
+
+canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+}
+
+/* Glassmorphic HUD overlay */
+.hud {
+    position: absolute;
+    z-index: 10;
+    pointer-events: none;
+}
+
+.top-bar {
+    top: 24px;
+    left: 24px;
+    right: 24px;
+    height: 64px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.title-card {
+    background: var(--glass-background);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    padding: 12px 24px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.pulse-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--primary);
+    border-radius: 50%;
+    box-shadow: 0 0 10px var(--primary);
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.5); opacity: 0.5; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.sidebar {
+    position: absolute;
+    top: 100px;
+    right: 24px;
+    bottom: 24px;
+    width: 320px;
+    background: var(--glass-background);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    z-index: 20;
+}
+
+.status-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+.status-item {
+    background: rgba(0,0,0,0.2);
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: var(--on-surface-variant);
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.value {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--primary);
+}
+
+.detections-list {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detection-card {
+    background: rgba(255,255,255,0.05);
+    padding: 16px;
+    border-radius: 8px;
+    border-left: 2px solid var(--secondary);
+}
+
+.field-id { font-weight: 600; margin-bottom: 4px; }
+.field-meta { font-size: 12px; color: var(--on-surface-variant); }
+
+/* Bottom Bar */
+.bottom-bar {
+    position: absolute;
+    bottom: 24px;
+    left: 24px;
+    right: 360px;
+    height: 48px;
+    background: var(--glass-background);
+    backdrop-filter: blur(var(--glass-blur));
+    border: 1px solid var(--glass-border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 32px;
+    font-size: 12px;
+    color: var(--on-surface-variant);
+}
+
+.metric-live { color: var(--secondary); font-weight: bold; }
