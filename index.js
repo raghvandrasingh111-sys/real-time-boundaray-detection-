@@ -8,6 +8,7 @@ let currentFrame = 1;
 // Resize canvas to match map container
 function resize() {
     const parent = document.getElementById('map-parent');
+    if (!parent) return;
     canvas.width = parent.clientWidth;
     canvas.height = parent.clientHeight;
 }
@@ -28,11 +29,17 @@ function mapCoords(coords) {
     }));
 }
 
-function drawDetections(data) {
+function drawDetections(features) {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
-    data.forEach((field, index) => {
-        const points = mapCoords(field.coords);
+    features.forEach((feature) => {
+        const props = feature.properties;
+        const geom = feature.geometry;
+        if (!geom || geom.type !== 'Polygon') return;
+
+        // GeoJSON Polygons have nested arrays: [[[x,y], [x,y], ...]]
+        const ring = geom.coordinates[0];
+        const points = mapCoords(ring);
         if (points.length < 3) return;
 
         // Draw Glow Path
@@ -51,7 +58,7 @@ function drawDetections(data) {
         ctx.lineWidth = 3;
         ctx.shadowBlur = 15;
         ctx.shadowColor = '#39ff14';
-        ctx.setLineDash([8, 4]); // Dashed line like the user's SVG
+        ctx.setLineDash([8, 4]); 
         ctx.stroke();
         ctx.setLineDash([]);
         ctx.shadowBlur = 0;
@@ -59,50 +66,55 @@ function drawDetections(data) {
         // Label
         ctx.font = 'bold 10px Inter';
         ctx.fillStyle = '#39ff14';
-        ctx.fillText(field.id.toUpperCase(), points[0].x, points[0].y - 10);
+        ctx.fillText(props.id.toUpperCase(), points[0].x, points[0].y - 10);
     });
 }
 
-function updateUI(data, frame) {
+function updateUI(features, frame) {
     const list = document.getElementById('detections-list');
+    if (!list) return;
     list.innerHTML = '';
     
-    data.forEach(field => {
+    features.forEach(feature => {
+        const props = feature.properties;
         const item = document.createElement('div');
         item.className = `flex items-center gap-4 px-6 py-4 text-[#baccb0] hover:text-[#e2e3e0] hover:bg-[#333534]/50 border-r-2 border-transparent transition-all cursor-pointer`;
         item.innerHTML = `
             <span class="material-symbols-outlined text-sm">radar</span>
             <div class="flex flex-col">
-                <span class="font-['Inter'] uppercase tracking-widest text-[10px] text-white font-black">${field.id}</span>
-                <span class="text-[9px] text-[#baccb0]">${field.area_ha} ha | Conf: ${(field.confidence * 100).toFixed(1)}%</span>
+                <span class="font-['Inter'] uppercase tracking-widest text-[10px] text-white font-black">${props.id}</span>
+                <span class="text-[9px] text-[#baccb0]">${props.area} ha | Conf: ${(props.confidence * 100).toFixed(1)}%</span>
             </div>
         `;
         list.appendChild(item);
     });
 
-    document.getElementById('cpu-stat').textContent = `${Math.floor(20 + Math.random() * 15)}%`;
-    document.getElementById('latency-stat').textContent = `${Math.floor(40 + Math.random() * 10)}ms`;
+    const cpu = document.getElementById('cpu-stat');
+    const lat = document.getElementById('latency-stat');
+    if (cpu) cpu.textContent = `${Math.floor(20 + Math.random() * 15)}%`;
+    if (lat) lat.textContent = `${Math.floor(40 + Math.random() * 10)}ms`;
 }
 
 async function fetchDetection(frame) {
     try {
         const response = await fetch(`detections_frame_${frame}.json`);
-        return await response.json();
+        const data = await response.json();
+        // Handle GeoJSON FeatureCollection
+        return data.features || [];
     } catch (e) {
         console.error("Error fetching frame:", e);
-        return null;
+        return [];
     }
 }
 
 async function loop() {
-    const data = await fetchDetection(currentFrame);
-    if (data) {
-        updateUI(data, currentFrame);
+    const features = await fetchDetection(currentFrame);
+    if (features && features.length > 0) {
+        updateUI(features, currentFrame);
         
-        // Soft fade
         canvas.style.opacity = 0.5;
         setTimeout(() => {
-            drawDetections(data);
+            drawDetections(features);
             canvas.style.opacity = 1;
         }, 100);
     }
